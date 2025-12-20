@@ -35,10 +35,53 @@ func Main() {
 	fTTY := startDaemon(conf)
 
 	initLogger(conf)
-	printMotd(conf)
 
-	if command := login(conf, initSessionHandle()); command != "" {
-		processCommand(command, conf)
+	// Track whether we've done the initial autologin for this process lifetime
+	autologinDone := false
+
+	// Set up signal handling once for the entire process lifetime
+	h := initSessionHandle()
+
+	// Main loop - persist after logout, only exit on interrupt
+	for {
+		printMotd(conf)
+
+		// Autologin only on first iteration (process start / service start)
+		confForSession := *conf
+		if autologinDone {
+			confForSession.Autologin = false
+		}
+
+		// Reset session state for new login
+		h.session = nil
+		h.auth = nil
+
+		command := login(&confForSession, h)
+
+		// Mark autologin as done after first login attempt
+		if conf.Autologin {
+			autologinDone = true
+		}
+
+		if h.interrupted {
+			// Exit the loop on interrupt
+			break
+		}
+
+		if command != "" {
+			processCommand(command, conf)
+		}
+
+		// Clear screen and reset for next login
+		if conf.DaemonMode {
+			setColors(conf.FgColor, conf.BgColor)
+			clearScreen(fTTY)
+			if conf.PrintIssue {
+				fmt.Println()
+				printIssue(pathIssue, conf.strTTY())
+				setColors(conf.FgColor, conf.BgColor)
+			}
+		}
 	}
 
 	stopDaemon(conf, fTTY)
