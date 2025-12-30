@@ -125,6 +125,8 @@ func (s *commonSession) start() {
 
 	carrierErr := s.finishCarrier()
 
+	s.resetTTYState()
+
 	s.runExitScript()
 
 	endUtmpEntry(utmpEntry)
@@ -236,6 +238,18 @@ func (s *commonSession) getLoginShell() string {
 		return s.d.loginShell
 	}
 	return "/bin/sh"
+}
+
+// resetTTYState restores TTY state after session ends.
+// This is important for Xorg sessions which change keyboard mode to raw mode.
+func (s *commonSession) resetTTYState() {
+	if s.d.env == Xorg && s.conf.DaemonMode {
+		if fTTY, err := os.OpenFile(s.conf.ttyPath(), os.O_RDWR, 0700); err == nil {
+			resetKeyboardMode(fTTY)
+			fTTY.Close()
+			logPrint("Reset keyboard mode")
+		}
+	}
 }
 
 // Runs session exit script

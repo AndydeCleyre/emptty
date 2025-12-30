@@ -15,6 +15,11 @@ const (
 	_K_NUMLOCK    = 0x02
 	_K_CAPSLOCK   = 0x04
 
+	_KDGKBMODE = 0x4B44
+	_KDSKBMODE = 0x4B45
+
+	_K_UNICODE = 0x03
+
 	currentVc = "/dev/tty0"
 )
 
@@ -70,4 +75,11 @@ func setTerminalEcho(fd uintptr, status bool) error {
 		return err
 	}
 	return nil
+}
+
+// resetKeyboardMode resets the keyboard mode to K_UNICODE after X exits.
+// Xorg changes the keyboard to raw mode, and when it exits without proper
+// cleanup, the keyboard can be left in an unusable state.
+func resetKeyboardMode(tty *os.File) {
+	syscall.Syscall(syscall.SYS_IOCTL, uintptr(tty.Fd()), uintptr(_KDSKBMODE), uintptr(_K_UNICODE))
 }
