@@ -75,3 +75,6 @@ VERTICAL_SELECTION=false
 
 #If set true, environmental groups are printed to differ Xorg/Wayland/Custom/UserCustom desktops.
 IDENTIFY_ENVS=false
+
+#If set true, reboot/shutdown/suspend commands are shown in the desktop selection menu.
+#COMMANDS_IN_MENU=false

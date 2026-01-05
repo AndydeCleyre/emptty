@@ -40,6 +40,12 @@ func login(conf *config, h *sessionHandle) string {
 		return ""
 	}
 
+	// Check if a command item was selected from menu
+	if d.command != "" {
+		h.auth.closeAuth()
+		return d.command
+	}
+
 	runDisplayScript(conf.DisplayStartScript)
 
 	if err := h.auth.openAuthSession(d.env.sessionType()); err != nil {
@@ -64,6 +70,12 @@ func processDesktopSelection(usr *sysuser, conf *config) *desktop {
 
 	if d == nil || d.selection != SelectionFalse {
 		selectedDesktop, lastDesktop := selectDesktop(usr, conf, d)
+
+		// Check if a command item was selected
+		if selectedDesktop.command != "" {
+			return selectedDesktop
+		}
+
 		if isLastDesktopForSave(usr, lastDesktop, selectedDesktop) {
 			setUserLastSession(usr, selectedDesktop)
 		}

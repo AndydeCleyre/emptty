@@ -62,6 +62,7 @@ type config struct {
 	CmdPoweroff         string           `config:"CMD_POWEROFF" parser:"SanitizeValue" default:"poweroff"`
 	CmdReboot           string           `config:"CMD_REBOOT" parser:"SanitizeValue" default:"reboot"`
 	CmdSuspend          string           `config:"CMD_SUSPEND" parser:"SanitizeValue" default:""`
+	CommandsInMenu      bool             `config:"COMMANDS_IN_MENU" parser:"ParseBool" string:"StringBool" default:"false"`
 }
 
 // LoadConfig handles loading of application configuration.

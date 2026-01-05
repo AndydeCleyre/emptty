@@ -63,6 +63,7 @@ type desktop struct {
 	desktopNames string
 	noDisplay    bool
 	hidden       bool
+	command      string
 }
 
 // Gets exec path from desktop and returns true, if command allows dbus-launch.
@@ -136,11 +137,15 @@ func selectDesktop(usr *sysuser, conf *config, d *desktop) (*desktop, *desktop) 
 		return desktops[0], desktops[lastDesktop]
 	}
 
+	// Append command menu items if enabled
+	commandItems := getCommandMenuItems(conf)
+
 	// Otherwise go through selection process
 	indent := conf.GetIndentString()
 	for {
 		fmt.Printf("\n")
 		printDesktops(conf, desktops)
+		printCommandItems(conf, commandItems, len(desktops))
 		fmt.Printf("\n\n%sSelect [%d]: ", indent, lastDesktop)
 
 		selection, _ := bufio.NewReader(os.Stdin).ReadString('\n')
@@ -155,6 +160,9 @@ func selectDesktop(usr *sysuser, conf *config, d *desktop) (*desktop, *desktop) 
 		}
 		if int(id) < len(desktops) {
 			return desktops[id], desktops[lastDesktop]
+		}
+		if int(id) < len(desktops)+len(commandItems) {
+			return commandItems[int(id)-len(desktops)], desktops[lastDesktop]
 		}
 	}
 }
@@ -192,6 +200,54 @@ func printDesktops(conf *config, desktops []*desktop) {
 			extraIndent = " "
 		}
 		fmt.Printf("%s[%d] %s", extraIndent, i, v.name)
+	}
+}
+
+// Returns command menu items based on config.
+func getCommandMenuItems(conf *config) []*desktop {
+	if !conf.CommandsInMenu {
+		return nil
+	}
+
+	return []*desktop{
+		{name: "Reboot", command: "reboot"},
+		{name: "Shutdown", command: "poweroff"},
+		{name: "Suspend", command: "suspend"},
+	}
+}
+
+// Prints command menu items after desktops.
+func printCommandItems(conf *config, items []*desktop, startIndex int) {
+	if len(items) == 0 {
+		return
+	}
+
+	dSeparator := ", "
+	eSeparator := " "
+	if conf.VerticalSelection {
+		indent := conf.GetIndentString()
+		dSeparator = "\n" + indent
+		eSeparator = "\n" + indent
+	}
+
+	if conf.IdentifyEnvs {
+		fmt.Print(eSeparator)
+		fmt.Print(eSeparator)
+		fmt.Printf("|Commands|%s", eSeparator)
+	} else {
+		fmt.Print(dSeparator)
+	}
+
+	for i, v := range items {
+		if i > 0 {
+			fmt.Print(dSeparator)
+		}
+		extraIndent := ""
+		total := startIndex + len(items)
+		if conf.VerticalSelection && conf.IndentSelection > 0 && startIndex+i < 10 && total > 10 {
+			extraIndent = " "
+		}
+		fmt.Printf("%s[%d] %s", extraIndent, startIndex+i, v.name)
 	}
 }
 
